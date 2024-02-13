@@ -1,6 +1,7 @@
 from flask import Flask, make_response, redirect, render_template, request, jsonify, url_for, Response, session
 import requests
 from EdgeNodeExceptions import MissingTrustData, LowClientTrust
+from IPReputationChecker import IPReputationChecker
 from RequestType import RequestType
 from EdgeNodeConfig import EdgeNodeConfig
 from datetime import timedelta
@@ -19,6 +20,7 @@ class EdgeNodeReceiver:
 
     def __init__(self, host, port):
         EdgeNodeReceiver.config = EdgeNodeConfig()
+        EdgeNodeReceiver.ipReputationChecker = IPReputationChecker()
         self.host = host
         self.port = port
 
@@ -97,37 +99,37 @@ class EdgeNodeReceiver:
     # returns the trust level of the client if the client is trusted and None if not
     @staticmethod
     def getPEPDecision(trustData):
-        try:
             response = requests.post(f"{EdgeNodeReceiver.config.trustEngineUrl}/getDecision", json=trustData, verify="cert.pem")
             if response.status_code == 200:
                 return response.json().get("trustLevel")
             else:
                 print("Trust Engine failed:", response.status_code)
                 return None
-        except Exception as e:
-            print(f"An error occurred: {e}")
-            return None
         
     # Get the Trust engines response to a login request
     # returns (session token, trustLevel) if the login was successful and None if not
     @staticmethod
     def getPEPLoginDecision(trustData):
-        try:
-            response = requests.post(f"{EdgeNodeReceiver.config.trustEngineUrl}/login", json=trustData, verify="cert.pem")
-            data = response.json()
-            if response.status_code == 200:
-                return data.get("session"), data.get("trustLevel")
-            else:
-                print("Trust Engine failed:", response.status_code)
-                return None, None
-        except Exception as e:
-            print(f"An error occurred: {e}")
+        # Get the connecting ip's reputation
+        ipReputation = EdgeNodeReceiver.ipReputationChecker.checkReputation(trustData.get("ip"))
+        if ipReputation.get("data").get("abuseConfidenceScore") > 50:
+            raise LowClientTrust("Low IP Reputation")
+        
+        EdgeNodeReceiver.ipReputationChecker.addReputationData(ipReputation, trustData)
+
+        EdgeNodeReceiver.__printTrustData(trustData)
+
+        response = requests.post(f"{EdgeNodeReceiver.config.trustEngineUrl}/login", json=trustData, verify="cert.pem")
+        data = response.json()
+        if response.status_code == 200:
+            return data.get("session"), data.get("trustLevel")
+        else:
+            print("Trust Engine failed:", response.status_code)
             return None, None
         
     # Get the Trust engines response to a logout request
     @staticmethod
     def getPEPLogoutDecision(trustData):
-        try:
             response = requests.post(f"{EdgeNodeReceiver.config.trustEngineUrl}/logout", json=trustData, verify="cert.pem")
             data = response.json()
             if response.status_code == 200:
@@ -135,14 +137,10 @@ class EdgeNodeReceiver:
             else:
                 print("Trust Engine failed:", response.status_code)
                 return None
-        except Exception as e:
-            print(f"An error occurred: {e}")
-            return None
-        
+            
     # Get the Trust engines response to a register request
     @staticmethod
     def getPEPRegisterDecision(trustData):
-        try:
             response = requests.post(f"{EdgeNodeReceiver.config.trustEngineUrl}/register", json=trustData, verify="cert.pem")
             data = response.json()
             if response.status_code == 200:
@@ -150,9 +148,7 @@ class EdgeNodeReceiver:
             else:
                 print("Trust Engine failed:", response.status_code)
                 return None
-        except Exception as e:
-            print(f"An error occurred: {e}")
-            return None
+
         
     @staticmethod
     def getTrustData(data):
