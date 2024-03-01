@@ -158,17 +158,17 @@ class EdgeNodeReceiver:
     @staticmethod
     def getRequestType(data):
         type = data.get("requestType")
-        match type:
-            case "login":
-                return RequestType.LOGIN
-            case "logout":
-                return RequestType.LOGOUT
-            case "register":
-                return RequestType.REGISTER
-            case "removeAccount":
-                return RequestType.REMOVE_ACCOUNT
-            case _:
-                return RequestType.GENERIC
+        if type == "login":
+            return RequestType.LOGIN
+        elif type == "logout":
+            return RequestType.LOGOUT
+        elif type == "register":
+            return RequestType.REGISTER
+        elif type == "removeAccount":
+            return RequestType.REMOVE_ACCOUNT
+        else:
+            return RequestType.GENERIC
+
     
     # TODO validate the trust data is complete not just that it exists
     @staticmethod
