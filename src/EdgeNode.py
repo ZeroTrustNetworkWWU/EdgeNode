@@ -214,7 +214,7 @@ class EdgeNodeReceiver:
 
     # Start the Flask app
     def run(self):
-        app.run(host=self.host, port=self.port, ssl_context=('cert.pem', 'key.pem'), threaded=False, debug=True)
+        app.run(host=self.host, port=self.port)#, ssl_context=('cert.pem', 'key.pem'), threaded=False, debug=True)
 
     # Path for handling logins from a web browser
     @app.route('/login', methods=['GET'])

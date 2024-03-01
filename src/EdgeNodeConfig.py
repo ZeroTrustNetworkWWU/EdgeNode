@@ -5,8 +5,8 @@ class EdgeNodeConfig:
     _instance = None
     config_path = "edgeNodeConfig.json"
     default_config = {
-        "trustEngineUrl": "https://127.0.0.1:5001",
-        "backendServerUrl": "https://127.0.0.1:5002",
+        "trustEngineUrl": "http://127.0.0.1:5001",
+        "backendServerUrl": "http://127.0.0.1:5002",
         "secretKey": "PUT_YOUR_SECRET_HERE",
         "reputationCheckSecretKey": "PUT_YOUR_SECRET_HERE",
     }
