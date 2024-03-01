@@ -70,30 +70,29 @@ class EdgeNodeReceiver:
 
     @staticmethod
     def handleSpecialRequest(requestType, trustData):
-        match requestType:
-            case RequestType.LOGIN:
-                session, trust = EdgeNodeReceiver.getPEPLoginDecision(trustData)
-                if not trust:
-                    raise LowClientTrust("Trust Engine Denied Access")
-                return jsonify({"session": session}), 200
-            
-            case RequestType.LOGOUT:
-                trust = EdgeNodeReceiver.getPEPLogoutDecision(trustData)
-                if not trust:
-                    raise LowClientTrust("Trust Engine Denied Access")
-                return jsonify("Logout succesful"), 200
+        if requestType == RequestType.LOGIN:
+            session, trust = EdgeNodeReceiver.getPEPLoginDecision(trustData)
+            if not trust:
+                raise LowClientTrust("Trust Engine Denied Access")
+            return jsonify({"session": session}), 200
+        
+        elif requestType == RequestType.LOGOUT:
+            trust = EdgeNodeReceiver.getPEPLogoutDecision(trustData)
+            if not trust:
+                raise LowClientTrust("Trust Engine Denied Access")
+            return jsonify("Logout succesful"), 200
 
-            case RequestType.REGISTER:
-                trust = EdgeNodeReceiver.getPEPRegisterDecision(trustData)
-                if not trust:
-                    raise LowClientTrust("Trust Engine Denied Access")
-                return jsonify("Registration succesful"), 200
+        elif requestType == RequestType.REGISTER:
+            trust = EdgeNodeReceiver.getPEPRegisterDecision(trustData)
+            if not trust:
+                raise LowClientTrust("Trust Engine Denied Access")
+            return jsonify("Registration succesful"), 200
 
-            case RequestType.REMOVE_ACCOUNT:
-                pass
+        elif requestType == RequestType.REMOVE_ACCOUNT:
+            pass
 
-            case _:
-                return jsonify({"error": "Invalid request type"}), 500
+        else:
+            return jsonify({"error": "Invalid request type"}), 500
     
     # Get the Trust engines decision on the trust of the client 
     # returns the trust level of the client if the client is trusted and None if not
