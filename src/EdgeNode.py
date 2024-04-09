@@ -111,7 +111,13 @@ class EdgeNodeReceiver:
     def getPEPLoginDecision(trustData):
         # Get the connecting ip's reputation
         ipReputation = EdgeNodeReceiver.ipReputationChecker.checkReputation(trustData.get("ip"))
-        if ipReputation.get("data").get("abuseConfidenceScore") > 50:
+        if (ipReputation.get("data") == None):
+            print("IP Reputation failed:", ipReputation.get("error"))
+            score = 0
+        else:
+            score = ipReputation.get("data").get("abuseConfidenceScore")
+
+        if score > 50:
             raise LowClientTrust("Low IP Reputation")
         
         EdgeNodeReceiver.ipReputationChecker.addReputationData(ipReputation, trustData)
