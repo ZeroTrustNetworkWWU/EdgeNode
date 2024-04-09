@@ -116,11 +116,11 @@ class EdgeNodeReceiver:
             score = 0
         else:
             score = ipReputation.get("data").get("abuseConfidenceScore")
+            EdgeNodeReceiver.ipReputationChecker.addReputationData(ipReputation, trustData)
 
         if score > 50:
             raise LowClientTrust("Low IP Reputation")
         
-        EdgeNodeReceiver.ipReputationChecker.addReputationData(ipReputation, trustData)
 
         EdgeNodeReceiver.__printTrustData(trustData)
 
@@ -249,6 +249,8 @@ class EdgeNodeReceiver:
                 "password": password,
                 "requestType": "login"
             }
+
+            EdgeNodeReceiver.getRemainingTrustData(request, trust_data)
 
             # Send login request to the trust engine
             sessionKey, trust = EdgeNodeReceiver.getPEPLoginDecision(trust_data)
