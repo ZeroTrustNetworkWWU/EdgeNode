@@ -215,8 +215,19 @@ class EdgeNodeReceiver:
         # Make the request to the backend server
         response = requests.request(request.method, full_url, data=data, verify="cert.pem")
 
+        # Check if 'content-type' header exists
+        content_type = response.headers.get('content-type')
+
+        # If 'content-type' header exists, use it; otherwise, set it to a default value
+        if content_type is not None:
+            headers = dict(response.headers)
+        else:
+            # Set a default content type, for example, 'application/json'
+            content_type = 'application/json'
+            headers = {}
+
         # return a clone of the response
-        return Response(response.content, status=response.status_code, headers=dict(response.headers), content_type=response.headers['content-type'])
+        return Response(response.content, status=response.status_code, headers=headers, content_type=content_type)
 
     # Start the Flask app
     def run(self):
