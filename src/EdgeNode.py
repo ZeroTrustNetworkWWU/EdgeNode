@@ -1,5 +1,7 @@
 from flask import Flask, make_response, redirect, render_template, request, jsonify, url_for, Response, session
+
 import requests
+from flask_cors import CORS
 from EdgeNodeExceptions import MissingTrustData, LowClientTrust
 from IPReputationChecker import IPReputationChecker
 from RequestType import RequestType
@@ -8,6 +10,7 @@ from datetime import timedelta
 
 # Create a Flask app instance
 app = Flask(__name__, static_url_path=None, static_folder=None)
+CORS(app)
 
 # configure sessios to expire after 30 minutes
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=30)
@@ -38,6 +41,8 @@ class EdgeNodeReceiver:
                 # TODO pull trust data from the cookies and add it to the data
                 # instead of just redirecting to the login page
                 sessionKey = session.get('sessionKey')
+                if not sessionKey:
+                    return redirect(url_for('login'))
                 data = {"_trustData" : {"session": sessionKey}}
 
             
@@ -153,7 +158,6 @@ class EdgeNodeReceiver:
             else:
                 print("Trust Engine failed:", response.status_code)
                 return None
-
         
     @staticmethod
     def getTrustData(data):
@@ -213,7 +217,7 @@ class EdgeNodeReceiver:
         full_url = EdgeNodeReceiver.config.backendServerUrl + request.path
 
         # Make the request to the backend server
-        response = requests.request(request.method, full_url, data=data, verify="cert.pem")
+        response = requests.request(request.method, full_url, json=data, verify="cert.pem")
 
         # Check if 'content-type' header exists
         content_type = response.headers.get('content-type')
@@ -271,6 +275,7 @@ class EdgeNodeReceiver:
             # Set the session information
             response = make_response(redirect(url_for('successPage')))
             session.update({'sessionKey': sessionKey})
+            response.set_cookie('sessionKey', sessionKey)
             return response
 
         except MissingTrustData as e:
@@ -293,7 +298,8 @@ class EdgeNodeReceiver:
             return jsonify({"error": "Missing Session"}), 500
         
         # redirect to the root
-        return redirect(url_for('receive_request'))
+        response = make_response(redirect(url_for('receive_request')))
+        return response
 
 # Entry point
 if __name__ == "__main__":
