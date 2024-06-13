@@ -1,5 +1,4 @@
 from flask import Flask, make_response, redirect, render_template, request, jsonify, url_for, Response, session
-
 import requests
 from flask_cors import CORS
 from EdgeNodeExceptions import MissingTrustData, LowClientTrust
@@ -7,6 +6,7 @@ from IPReputationChecker import IPReputationChecker
 from RequestType import RequestType
 from EdgeNodeConfig import EdgeNodeConfig
 from datetime import timedelta
+import datetime
 
 # Create a Flask app instance
 app = Flask(__name__, static_url_path=None, static_folder=None)
@@ -62,6 +62,17 @@ class EdgeNodeReceiver:
             if not trust:
                 raise LowClientTrust("Trust Engine Denied Access")
             
+        # Log the request
+            log_data = {
+                'timestamp': datetime.datetime.now().isoformat(),
+                'ip': request.remote_addr,
+                'user': trustData.get('user', 'unknown'),
+                'resource': request.path,
+                'action': request.method,
+                'additional_info': 'Request handled successfully'
+            }
+            EdgeNodeReceiver.log_to_trust_engine(log_data)
+            
             # Forward the request to the backend server and return the response
             return EdgeNodeReceiver.forwardToBackendServer(request, data)
         
@@ -71,7 +82,12 @@ class EdgeNodeReceiver:
         except LowClientTrust as e:
             print(e)
             return jsonify({"error": f"{e}"}), 500
-        
+
+    @staticmethod
+    def log_to_trust_engine(log_data):
+        url = 'http://localhost:5001/log'
+        response = requests.post(url, json=log_data)
+        return response.status_code    
 
     @staticmethod
     def handleSpecialRequest(requestType, trustData):
